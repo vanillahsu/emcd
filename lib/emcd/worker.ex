@@ -36,14 +36,14 @@ defmodule Emcd.Worker do
   end
 
   # set <key> <flags> <exptime> <bytes> [noreply]\r\n<value>\r\n
-  def handle_call({:set, key, value}, _from, {socket, status, options}) do
+  def handle_call({:set, key, value, exptime}, _from, {socket, status, options}) do
     if (status == false) do
       {:reply, {:errorr, :not_connected}, {socket, status, options}}
     else
       key = format_key(key, options[:namespace])
       bytes = byte_size(value)
 
-      packet = "set #{key} 0 0 #{bytes} \r\n#{value}\r\n" |> String.to_charlist()
+      packet = "set #{key} 0 #{exptime} #{bytes} \r\n#{value}\r\n" |> String.to_charlist()
 
       case send_and_receive(socket, packet, options) do
         {:ok, received_packet} ->
