@@ -41,10 +41,10 @@ defmodule Emcd.Worker do
       {:reply, {:errorr, :not_connected}, {socket, status, options}}
     else
       key = format_key(key, options[:namespace])
-
-      {flag, bytes, output} = encode(value)
-
-      packet = "set #{key} #{flag} #{exptime} #{bytes} \r\n#{output}\r\n" |> String.to_charlist()
+      bytes = byte_size(value)
+      pre_packet = "set #{key} 0 #{exptime} #{bytes} \r\n" |> String.to_charlist()
+      post_packet = "\r\n" |> String.to_charlist()
+      packet = pre_packet ++ :binary.bin_to_list(value) ++ post_packet
 
       case send_and_receive(socket, packet, options) do
         {:ok, received_packet} ->
@@ -119,23 +119,5 @@ defmodule Emcd.Worker do
 
   defp format_result(raw) do
     to_string(raw) |> String.split("\r\n", trim: true)
-  end
-
-  defp encode(value) when is_binary(value) do
-    {0, byte_size(value), value}
-  end
-
-  defp encode(value) do
-    output = :erlang.term_to_binary(value)
-    {1, byte_size(output), output}
-  end
-
-
-  defp decode(0, value) do
-    value
-  end
-
-  defp decode(1, value) do
-    :erlang.binary_to_term(value)
   end
 end

@@ -38,11 +38,18 @@ defmodule Emcd do
   end
 
   def get(key) do
-    GenServer.call(Emcd.Worker, {:get, key})
+    case GenServer.call(Emcd.Worker, {:get, key}) do
+      {:ok, [_, payload, _]} ->
+        output = trim_leading(payload, 194)
+        {:ok, :erlang.binary_to_term(output)}
+      _ ->
+        {:error}
+    end
   end
 
   def set(key, value, exptime \\ 3600) do
-    GenServer.call(Emcd.Worker, {:set, key, value, exptime})
+    output = :erlang.term_to_binary(value)
+    GenServer.call(Emcd.Worker, {:set, key, output, exptime})
   end
 
   def version() do
@@ -54,4 +61,8 @@ defmodule Emcd do
     :timer.sleep(interval)
     GenServer.cast(Emcd.Worker, {:connect, interval})
   end
+
+  defp trim_leading(binary, byte \\ 0)
+  defp trim_leading(<< byte, binary :: binary >>, byte) when is_binary(binary) and is_integer(byte), do: trim_leading(binary, byte)
+  defp trim_leading(binary, byte) when is_binary(binary) and is_integer(byte), do: binary
 end
