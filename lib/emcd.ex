@@ -52,6 +52,10 @@ defmodule Emcd do
     GenServer.call(Emcd.Worker, {:set, key, output, exptime})
   end
 
+  def delete(key) do
+    GenServer.call(Emcd.Worker, {:delete, key})
+  end
+
   def version() do
     GenServer.call(Emcd.Worker, {:version})
   end

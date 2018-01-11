@@ -16,6 +16,24 @@ defmodule Emcd.Worker do
     GenServer.start_link(__MODULE__, {socket, status, options}, [name: __MODULE__])
   end
 
+  # delete <key> \r\n
+  def handle_call({:delete, key}, _from, {socket, status, options}) do
+    if (status == false) do
+      {:reply, {:errorr, :not_connected}, {socket, status, options}}
+    else
+      key = format_key(key, options[:namespace])
+      packet = "delete #{key} \r\n" |> String.to_charlist()
+
+      case send_and_receive(socket, packet, options) do
+        {:ok, received_packet} ->
+          {:reply, {:ok, format_result(received_packet)}, {socket, status, options}}
+        {:error, reason} ->
+          status = check_error_reason(status, reason)
+          {:reply, {:error, reason}, {socket, status, options}}
+      end
+    end
+  end
+
   # get <key>*\r\n
   def handle_call({:get, key}, _from, {socket, status, options}) do
     if (status == false) do
